@@ -9,7 +9,6 @@ import {
 } from '../data/products';
 import { CategoryType, Product } from '../types';
 import { ShopSection } from './ShopSection';
-import { HeroCinematicSkeleton } from './CinematicSkeletonLoader';
 
 interface HeroSectionProps {
   products: Product[];
@@ -72,19 +71,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isHeroLoading, setIsHeroLoading] = useState(true);
-
-  // Cinematic skeleton loader during initial hero fetch
-  useEffect(() => {
-    const timer = setTimeout(() => setIsHeroLoading(false), 400);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Automatically scroll & show 2-3 pictures in the same big size
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % bigSlides.length);
-    }, 4000);
+    }, 4500);
     return () => clearInterval(timer);
   }, [bigSlides.length]);
 
@@ -132,20 +124,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </motion.div>
         </div>
 
-        {/* ================= ONLY ONE BIG ANIMATED POP PICTURE (HORIZONTAL LAYOUT AUTO-SCROLLING 3 PICTURES) / CINEMATIC SKELETON ================= */}
-        {isHeroLoading ? (
-          <HeroCinematicSkeleton />
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: 32 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{
-              duration: 0.85,
-              type: 'spring',
-              bounce: 0.28,
-            }}
-            className="relative w-full max-w-5xl xl:max-w-6xl mx-auto h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-[#D4AF37]/65 shadow-[0_24px_70px_rgba(0,0,0,0.85)] bg-[#200407]"
-          >
+        {/* ================= ONLY ONE BIG ANIMATED POP PICTURE (HORIZONTAL LAYOUT AUTO-SCROLLING 3 PICTURES) ================= */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{
+            duration: 0.6,
+            ease: 'easeOut',
+          }}
+          className="relative w-full max-w-5xl xl:max-w-6xl mx-auto h-[320px] sm:h-[420px] md:h-[480px] lg:h-[520px] rounded-2xl sm:rounded-3xl overflow-hidden border-2 border-[#D4AF37]/65 shadow-[0_24px_70px_rgba(0,0,0,0.85)] bg-[#200407]"
+        >
           {/* Inner Antique Gold Filigree Accent Frame */}
           <div className="absolute inset-3 border border-[#D4AF37]/35 rounded-xl sm:rounded-2xl pointer-events-none z-20" />
 
@@ -170,43 +158,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             className="flex w-full h-full transition-transform duration-700 ease-out"
             style={{ transform: `translateX(-${currentIndex * 100}%)` }}
           >
-            {bigSlides.map((slide, idx) => (
+            {bigSlides.map((slide) => (
               <div
                 key={slide.id}
                 className="w-full h-full flex-shrink-0 relative overflow-hidden cursor-pointer"
                 onClick={() => handleSlideSelect(slide.category)}
               >
-                {/* Image with subtle continuous cinematic camera drift */}
-                <motion.img
+                {/* Crisp Hero Image with zero lag */}
+                <img
                   src={slide.image}
                   alt={slide.name}
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover object-center"
-                  animate={{
-                    scale: currentIndex === idx ? [1, 1.06, 1] : 1,
-                  }}
-                  transition={{
-                    duration: 9,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
                 />
 
                 {/* Rich Atmospheric Gradient Overlays */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#140204]/95 via-[#140204]/35 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#140204]/70 via-transparent to-[#140204]/30" />
-
-                {/* Sweeping Light Shimmer */}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"
-                  animate={{ x: ['-100%', '200%'] }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                    delay: idx * 1.2,
-                  }}
-                />
 
                 {/* Top Badge: Tagline */}
                 <div className="absolute top-5 left-5 sm:top-6 sm:left-6 z-20">
@@ -262,7 +230,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             ))}
           </div>
         </motion.div>
-      )}
 
       {/* ================= PRODUCTS TO SHOP IN HERO SECTION (JUST BELOW ANIMATION IN A POPUP WAY) ================= */}
         <motion.div

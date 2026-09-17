@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag,
@@ -8,7 +8,6 @@ import {
   Check,
 } from 'lucide-react';
 import { Product, CategoryType } from '../types';
-import { ProductGridCinematicSkeleton } from './CinematicSkeletonLoader';
 
 interface ShopSectionProps {
   products: Product[];
@@ -47,16 +46,7 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
   onAdd,
 }) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.72, y: 28 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{
-        duration: 0.55,
-        delay: 0.08 + (index % 10) * 0.05,
-        type: 'spring',
-        stiffness: 260,
-        damping: 20,
-      }}
+    <div
       className="bg-white rounded-xl sm:rounded-2xl border border-[#E6D8C8] overflow-hidden shadow-sm hover:shadow-xl hover:border-[#D4AF37]/70 transition-all duration-300 flex flex-col justify-between group cursor-pointer w-full will-pop popped"
       onClick={() => onSelectProduct(product)}
     >
@@ -139,7 +129,7 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -205,15 +195,6 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
     title: 'Mithai & Delicacies',
     subtitle: 'Pure Desi Ghee Heritage Since 1975',
   };
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Cinematic data fetching & category transition state
-  useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 320);
-    return () => clearTimeout(timer);
-  }, [selectedCategory, searchQuery, onlyDesiGhee, sortBy]);
 
   const handleWeightChange = (productId: string, weight: string) => {
     setProductWeights((prev) => ({ ...prev, [productId]: weight }));
@@ -376,10 +357,8 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
         </div>
       )}
 
-      {/* ================= AUTOMATIC & PERMANENT 2 IN A ROW GRID / CINEMATIC SKELETON ================= */}
-      {isLoading ? (
-        <ProductGridCinematicSkeleton count={4} />
-      ) : filteredProducts.length === 0 ? (
+      {/* ================= AUTOMATIC & PERMANENT 2 IN A ROW GRID ================= */}
+      {filteredProducts.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-[#E7DACB]">
           <p className="font-serif text-lg text-[#4A3428]">No sweets match this filter.</p>
           <button

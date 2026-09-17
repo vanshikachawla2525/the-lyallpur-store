@@ -69,20 +69,15 @@
   }
 }
 
+/* Smooth pop for targeted elements */
 .will-pop {
   opacity: 0;
-  transform: translate3d(0, 18px, 0) scale(0.96);
-  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform, opacity;
+  transform: translate3d(0, 14px, 0);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   backface-visibility: hidden;
 }
 
 .will-pop.popped {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-}
-
-/* Smooth pop for headings, text blocks, buttons, and cards */
-h1, h2, h3, h4, h5, h6, p, button, img {
-  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
 }

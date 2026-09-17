@@ -20,8 +20,14 @@ import { PRODUCTS_CATALOGUE } from './data/products';
 import { Product, CartItem, CategoryType } from './types';
 
 export default function App() {
-  // Cinematic Haveli Entrance: Plays immediately upon clicking/visiting the website link
-  const [showIntro, setShowIntro] = useState<boolean>(true);
+  // Cinematic Haveli Entrance: Plays on first visit and can be replayed from navbar
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('lyallpur_intro_seen') !== 'true';
+    } catch {
+      return true;
+    }
+  });
 
   // Navigation State: 'home' | 'shop' | 'gifting' | 'story' | 'stores'
   const [activeTab, setActiveTab] = useState<string>('home');
