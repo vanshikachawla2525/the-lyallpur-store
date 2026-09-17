@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag,
@@ -6,8 +6,11 @@ import {
   Sparkles,
   Filter,
   Check,
+  Search,
 } from 'lucide-react';
 import { Product, CategoryType } from '../types';
+import { OptimizedImage } from './OptimizedImage';
+import { ProductGridCinematicSkeleton } from './CinematicSkeletonLoader';
 
 interface ShopSectionProps {
   products: Product[];
@@ -33,10 +36,9 @@ interface CompactProductCardProps {
   onBuy: (product: Product, e: React.MouseEvent) => void;
 }
 
-// Compact Product Card - strictly 2 products in a row
+// Compact Product Card with High-Contrast CTAs & Layout Shift Prevention
 const CompactProductCard: React.FC<CompactProductCardProps> = ({
   product,
-  index,
   currentWeight,
   currentPrice,
   currentQty,
@@ -47,18 +49,30 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
 }) => {
   return (
     <div
-      className="bg-white rounded-xl sm:rounded-2xl border border-[#E6D8C8] overflow-hidden shadow-sm hover:shadow-xl hover:border-[#D4AF37]/70 transition-all duration-300 flex flex-col justify-between group cursor-pointer w-full will-pop popped"
+      className="bg-white rounded-xl sm:rounded-2xl border border-[#E6D8C8] overflow-hidden shadow-xs hover:shadow-xl hover:border-[#9E0B14]/60 transition-all duration-300 flex flex-col justify-between group cursor-pointer w-full will-change-transform"
       onClick={() => onSelectProduct(product)}
     >
-      {/* Top Image Stage with Entrance Pop */}
+      {/* Top Image Stage with Layout Shift Prevention */}
       <div className="relative aspect-[4/3] sm:aspect-[16/11] bg-[#F5EFEB] overflow-hidden">
-        <img
+        <OptimizedImage
           src={product.image}
           alt={product.name}
-          referrerPolicy="no-referrer"
-          loading="lazy"
-          className="w-full h-full object-cover object-center group-hover:scale-106 transition-transform duration-500 ease-out"
+          aspectRatio="aspect-[4/3] sm:aspect-[16/11]"
+          imgClassName="group-hover:scale-105 transition-transform duration-500 ease-out"
         />
+
+        {/* Top Badges */}
+        {product.badge && (
+          <span className="absolute top-2.5 left-2.5 z-10 px-2.5 py-0.5 text-[10px] sm:text-xs font-bold tracking-wider uppercase rounded-md bg-[#9E0B14] text-white shadow-xs">
+            {product.badge}
+          </span>
+        )}
+
+        {product.isPureDesiGhee && (
+          <span className="absolute top-2.5 right-2.5 z-10 hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase rounded-full bg-[#FAF0D4] text-[#825B0E] border border-[#E2C98F]">
+            Desi Ghee
+          </span>
+        )}
 
         {/* Added to Cart Feedback Toast */}
         <AnimatePresence>
@@ -67,7 +81,7 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-x-0 bottom-0 bg-[#240609]/95 text-[#FCE8B6] text-[11px] sm:text-xs py-1.5 text-center font-medium flex items-center justify-center gap-1.5 shadow"
+              className="absolute inset-x-0 bottom-0 z-20 bg-[#240609]/95 text-[#FCE8B6] text-[11px] sm:text-xs py-1.5 text-center font-bold flex items-center justify-center gap-1.5 shadow"
             >
               <Check className="w-3.5 h-3.5 text-[#D4AF37]" />
               <span>Added to Cart</span>
@@ -76,14 +90,18 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* Product Details: STRICTLY Product Name, Product Category, Price, and Shop Placement */}
+      {/* Product Details */}
       <div className="p-3 sm:p-4 md:p-5 flex-grow flex flex-col justify-between">
         <div>
-          {/* Product Category */}
-          <div className="mb-1">
-            <span className="text-[10px] sm:text-xs uppercase tracking-widest text-[#9E0B14] font-bold truncate block">
+          {/* Product Category & Rating */}
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className="text-[10px] sm:text-xs uppercase tracking-widest text-[#9E0B14] font-bold truncate">
               {product.subcategory || product.category}
             </span>
+            <div className="flex items-center text-[11px] font-bold text-[#8F7432]">
+              <Star className="w-3 h-3 fill-[#D4AF37] text-[#D4AF37] mr-0.5" />
+              <span>{product.rating}</span>
+            </div>
           </div>
 
           {/* Product Name */}
@@ -92,18 +110,19 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
           </h3>
         </div>
 
-        {/* Individual Shop Placement: Price + Weight Selector + Add to Cart Button */}
+        {/* Shop Placement: Price + Weight Selector + High Contrast Add to Cart Button */}
         <div className="mt-3 pt-2.5 border-t border-[#F2E8DC] space-y-2.5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between gap-1.5">
-            {/* Weight Pills for Shop Placement */}
+            {/* Weight Pills */}
             <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto hide-scrollbar">
               {product.weights.map((w) => (
                 <button
                   key={w.weight}
+                  type="button"
                   onClick={() => onWeightChange(product.id, w.weight)}
-                  className={`px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-semibold border transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`px-2 py-0.5 sm:py-1 rounded-md text-[10px] sm:text-xs font-bold border transition-all cursor-pointer whitespace-nowrap ${
                     currentWeight === w.weight
-                      ? 'bg-[#9E0B14] text-white border-[#9E0B14] shadow-xs'
+                      ? 'bg-[#9E0B14] text-white border-[#9E0B14] shadow-xs ring-1 ring-[#9E0B14]'
                       : 'bg-[#FAF7F2] text-[#4A3428] border-[#DECFC0] hover:border-[#9E0B14]'
                   }`}
                 >
@@ -113,19 +132,20 @@ const CompactProductCard: React.FC<CompactProductCardProps> = ({
             </div>
 
             {/* Price */}
-            <span className="font-serif text-base sm:text-lg md:text-xl font-bold text-[#24130C] whitespace-nowrap">
+            <span className="font-serif text-base sm:text-lg md:text-xl font-bold text-[#9E0B14] whitespace-nowrap">
               ₹{currentPrice * currentQty}
             </span>
           </div>
 
-          {/* Shop Placement Quick Add Button */}
+          {/* High-Contrast Quick Add Button */}
           <button
             id={`btn-add-${product.id}`}
+            type="button"
             onClick={(e) => onAdd(product, e)}
-            className="w-full py-2 px-3 rounded-lg bg-[#FAF2E6] hover:bg-[#9E0B14] text-[#801015] hover:text-white border border-[#DFCBB5] hover:border-[#9E0B14] text-xs font-semibold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+            className="w-full py-2.5 px-3 rounded-lg bg-[#FAF2E6] hover:bg-[#9E0B14] text-[#9E0B14] hover:text-white border-2 border-[#9E0B14] text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md active:scale-[0.98] cursor-pointer"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
-            <span>+ Add to Cart</span>
+            <span>Add to Cart</span>
           </button>
         </div>
       </div>
@@ -148,9 +168,17 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
   const [onlyDesiGhee, setOnlyDesiGhee] = useState(false);
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isHydrating, setIsHydrating] = useState(false);
+
+  // Subtle smooth skeleton hydration simulation on category change to prevent layout shift
+  useEffect(() => {
+    setIsHydrating(true);
+    const t = setTimeout(() => setIsHydrating(false), 260);
+    return () => clearTimeout(t);
+  }, [selectedCategory, onlyDesiGhee]);
 
   const categoriesList: { id: CategoryType; label: string }[] = [
-    { id: 'all', label: 'Mithai & Delicacies' },
+    { id: 'all', label: 'All Delicacies' },
     { id: 'sweets', label: 'Pure Desi Ghee Mithai' },
     { id: 'gachak', label: 'Gur Gachak & Rewri' },
     { id: 'namkeen', label: 'Savouries / Namkeen' },
@@ -159,7 +187,6 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
     { id: 'gifting', label: 'Gift Boxes' },
   ];
 
-  // Pure Category Titles without container labels
   const categoryTitlesMap: Record<string, { title: string; subtitle: string }> = {
     all: {
       title: 'Mithai & Delicacies',
@@ -268,12 +295,12 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
 
   const content = (
     <div className={isHeroEmbedded ? '' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}>
-      {/* ================= CATEGORY FILTER PILLS (SHOP PAGE ONLY) ================= */}
+      {/* Category Filter Pills (Shop Page Only) */}
       {!isHeroEmbedded && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.4 }}
           className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 hide-scrollbar"
         >
           {categoriesList.map((cat) => {
@@ -282,10 +309,11 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
               <button
                 key={cat.id}
                 id={`filter-cat-${cat.id}`}
+                type="button"
                 onClick={() => onSelectCategory(cat.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs sm:text-sm tracking-wider uppercase font-medium whitespace-nowrap transition-all cursor-pointer shadow-sm ${
+                className={`px-4 py-2 rounded-full text-xs sm:text-sm tracking-wider uppercase font-bold whitespace-nowrap transition-all cursor-pointer shadow-xs ${
                   isSelected
-                    ? 'bg-[#9E0B14] text-white font-semibold shadow-md scale-105'
+                    ? 'bg-[#9E0B14] text-white font-bold shadow-md scale-105'
                     : 'bg-white text-[#4A3428] border border-[#E0D2C2] hover:border-[#9E0B14] hover:text-[#9E0B14]'
                 }`}
               >
@@ -296,78 +324,84 @@ export const ShopSection: React.FC<ShopSectionProps> = ({
         </motion.div>
       )}
 
-      {/* ================= DIRECTLY POP UP CATEGORY NAME IN BIG FONT FIRST ================= */}
+      {/* Category Heading Header */}
       <motion.div
         key={selectedCategory}
-        initial={{ opacity: 0, scale: 0.65, y: 35 }}
+        initial={{ opacity: 0, scale: 0.8, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.75, type: 'spring', stiffness: 260, damping: 18 }}
+        transition={{ duration: 0.5, type: 'spring', stiffness: 260, damping: 20 }}
         className="mb-6 sm:mb-8 text-center sm:text-left pb-4 border-b border-[#E6D8C8]"
       >
-        <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold tracking-widest text-[#9E0B14] uppercase mb-2">
+        <div className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold tracking-widest text-[#9E0B14] uppercase mb-2">
           <Sparkles className="w-4 h-4 text-[#D4AF37]" />
           <span>{currentCategoryInfo.subtitle}</span>
         </div>
-        <h2 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-bold text-[#24130C] tracking-tight leading-tight">
+        <h2 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold text-[#24130C] tracking-tight leading-tight">
           {currentCategoryInfo.title}
         </h2>
       </motion.div>
 
-      {/* ================= FILTER & SEARCH BAR (SHOP PAGE ONLY) ================= */}
+      {/* Filter & Search Controls (Shop Page Only) */}
       {!isHeroEmbedded && (
-        <div className="bg-white p-3 sm:p-4 rounded-xl border border-[#E5D7C7] shadow-sm mb-7 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-[#E5D7C7] shadow-xs mb-7 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2 text-xs font-medium text-[#4A3428] cursor-pointer select-none">
+            <label className="flex items-center gap-2 text-xs font-bold text-[#4A3428] cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={onlyDesiGhee}
                 onChange={(e) => setOnlyDesiGhee(e.target.checked)}
-                className="w-4 h-4 rounded text-[#9E0B14] focus:ring-[#9E0B14] border-[#C8B8A6]"
+                className="w-4 h-4 rounded text-[#9E0B14] focus:ring-[#9E0B14] border-[#C8B8A6] accent-[#9E0B14]"
               />
-              <span className="text-[#801015] font-semibold">100% Pure Desi Ghee</span>
+              <span className="text-[#801015]">100% Pure Desi Ghee</span>
             </label>
 
-            <input
-              type="text"
-              placeholder="Search delicacy..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="text-xs px-3 py-1.5 rounded-lg border border-[#D5C5B5] bg-[#FAF7F2] focus:outline-none focus:border-[#9E0B14] w-48 sm:w-56"
-            />
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#8C7667]" />
+              <input
+                type="text"
+                placeholder="Search delicacy..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="text-xs pl-8 pr-3 py-1.5 rounded-lg border border-[#D5C5B5] bg-[#FAF7F2] focus:outline-none focus:border-[#9E0B14] w-48 sm:w-56 text-[#24130C]"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 text-xs text-[#826F62]">
-            <span className="flex items-center gap-1 font-medium">
-              <Filter className="w-3 h-3" /> Sort:
+            <span className="flex items-center gap-1 font-bold">
+              <Filter className="w-3 h-3 text-[#9E0B14]" /> Sort:
             </span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="text-xs bg-[#FAF7F2] border border-[#D5C5B5] rounded-lg px-2.5 py-1 text-[#3E271B] focus:outline-none focus:border-[#9E0B14]"
+              className="text-xs bg-[#FAF7F2] border border-[#D5C5B5] rounded-lg px-2.5 py-1 text-[#3E271B] focus:outline-none focus:border-[#9E0B14] font-medium"
             >
               <option value="featured">Featured Heritage</option>
               <option value="price-asc">Price: Low to High</option>
               <option value="price-desc">Price: High to Low</option>
               <option value="rating">Highest Rated</option>
             </select>
-            <span className="font-semibold text-[#8A7669] ml-1">
+            <span className="font-bold text-[#9E0B14] ml-1">
               {filteredProducts.length} items
             </span>
           </div>
         </div>
       )}
 
-      {/* ================= AUTOMATIC & PERMANENT 2 IN A ROW GRID ================= */}
-      {filteredProducts.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-xl border border-[#E7DACB]">
-          <p className="font-serif text-lg text-[#4A3428]">No sweets match this filter.</p>
+      {/* Dynamic Hydration Skeleton vs Product Cards */}
+      {isHydrating ? (
+        <ProductGridCinematicSkeleton count={4} />
+      ) : filteredProducts.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-[#E7DACB] shadow-xs">
+          <p className="font-serif text-lg text-[#4A3428] font-bold">No sweets match this filter.</p>
           <button
+            type="button"
             onClick={() => {
               onSelectCategory('all');
               setOnlyDesiGhee(false);
               setSearchQuery('');
             }}
-            className="mt-3 px-4 py-1.5 text-xs uppercase tracking-widest font-semibold text-[#9E0B14] border border-[#9E0B14] rounded hover:bg-[#9E0B14] hover:text-white transition-colors cursor-pointer"
+            className="mt-3 px-5 py-2 text-xs uppercase tracking-widest font-bold text-white bg-[#9E0B14] hover:bg-[#800910] rounded-lg transition-colors cursor-pointer shadow"
           >
             Reset Filters
           </button>

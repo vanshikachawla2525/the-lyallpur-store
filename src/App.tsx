@@ -16,6 +16,7 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { SearchModal } from './components/SearchModal';
 import { AccountModal } from './components/AccountModal';
+import { SEOManager } from './components/SEOManager';
 import { PRODUCTS_CATALOGUE } from './data/products';
 import { Product, CartItem, CategoryType } from './types';
 
@@ -23,17 +24,53 @@ export default function App() {
   // Cinematic Haveli Entrance: Plays on first visit and can be replayed from navbar
   const [showIntro, setShowIntro] = useState<boolean>(() => {
     try {
+      // If direct deep link to product or tab, skip intro for instant rendering
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('product') || urlParams.get('tab') || urlParams.get('category')) {
+        return false;
+      }
       return sessionStorage.getItem('lyallpur_intro_seen') !== 'true';
     } catch {
       return true;
     }
   });
 
-  // Navigation State: 'home' | 'shop' | 'gifting' | 'story' | 'stores'
-  const [activeTab, setActiveTab] = useState<string>('home');
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('all');
+  // URL Hydration for SSR / Static link crawler readiness
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      return tab && ['home', 'shop', 'gifting', 'story', 'stores'].includes(tab) ? tab : 'home';
+    } catch {
+      return 'home';
+    }
+  });
 
-  // E-commerce State
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category') as CategoryType;
+      return cat || 'all';
+    } catch {
+      return 'all';
+    }
+  });
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const prodId = params.get('product');
+      if (prodId) {
+        const found = PRODUCTS_CATALOGUE.find((p) => p.id === prodId);
+        return found || null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+
+  // E-commerce Cart State
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('lyallpur_cart');
@@ -48,7 +85,27 @@ export default function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Sync URL when tab, category, or selected product changes (SEO deep linking)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams();
+      if (selectedProduct) {
+        params.set('product', selectedProduct.id);
+      } else {
+        if (activeTab !== 'home') {
+          params.set('tab', activeTab);
+        }
+        if (selectedCategory !== 'all') {
+          params.set('category', selectedCategory);
+        }
+      }
+      const newQuery = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      window.history.replaceState(null, '', newQuery);
+    } catch (e) {
+      // ignore
+    }
+  }, [activeTab, selectedCategory, selectedProduct]);
 
   // Sync cart to localStorage
   useEffect(() => {
@@ -78,16 +135,11 @@ export default function App() {
     if (category) {
       setSelectedCategory(category);
     }
+    setSelectedProduct(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectCategoryFromHero = (category: CategoryType) => {
-    setSelectedCategory(category);
-    setActiveTab('shop');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Cart operations
+  // Cart operations: Auto-open Slide-out Cart Drawer on Add
   const handleAddToCart = (product: Product, weight: string, price: number, quantity: number = 1) => {
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex(
@@ -110,10 +162,14 @@ export default function App() {
         ];
       }
     });
+
+    // Replace page redirects with automatic slide-out cart drawer opening
+    setIsCartOpen(true);
   };
 
   const handleBuyNow = (product: Product, weight: string, price: number, quantity: number = 1) => {
     handleAddToCart(product, weight, price, quantity);
+    setIsCartOpen(false);
     setIsCheckoutOpen(true);
   };
 
@@ -147,6 +203,14 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] text-[#20060A] selection:bg-[#9E0B14] selection:text-[#FFFDF9] font-sans">
+      {/* Dynamic SEO & Schema.org JSON-LD Structured Data Engine */}
+      <SEOManager
+        activeTab={activeTab}
+        selectedCategory={selectedCategory}
+        selectedProduct={selectedProduct}
+        cartCount={totalCartCount}
+      />
+
       {/* 1. Cinematic Door Opening Sequence (First Visit / On Request) */}
       {showIntro && <OpeningSequence onComplete={handleIntroComplete} />}
 
@@ -226,7 +290,7 @@ export default function App() {
       {/* 3. Rich Luxury Footer */}
       <Footer onNavigate={handleNavigate} onReplayIntro={handleReplayIntro} />
 
-      {/* Slide-out Cart Drawer */}
+      {/* Slide-out Cart Drawer with Instant Checkout CTA */}
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -251,7 +315,7 @@ export default function App() {
         onOrderCompleted={handleOrderCompleted}
       />
 
-      {/* Product Detail Modal */}
+      {/* Enhanced Product Detail Modal with Multi-angle Gallery, Zoom, and Mobile Sticky Action Bar */}
       <ProductDetailModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
